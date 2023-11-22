@@ -6,17 +6,20 @@ import {
 	Param,
 	Patch,
 	Post,
+	UseGuards,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
+import { JwtGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
 
 @Controller('user')
 @ApiTags('Users')
+@ApiBearerAuth() // Need to use auth in swagger
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
@@ -29,6 +32,7 @@ export class UserController {
 	}
 
 	@Get()
+	@UseGuards(JwtGuard)
 	async findAll() {
 		return this.userService.findAll();
 	}
