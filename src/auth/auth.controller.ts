@@ -1,21 +1,23 @@
 import {
 	Body,
 	Controller,
+	Get,
 	HttpException,
 	HttpStatus,
 	Post,
 	Request,
 	UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { AuthUserDto } from './dto/auth-user.dto';
-import { RefreshJwtGuard } from './guards/refresh-jwt-auth.guard';
+import { JwtGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 @ApiTags('Auth')
+@ApiBearerAuth() // Need to swagger
 export class AuthController {
 	constructor(
 		private authService: AuthService,
@@ -47,9 +49,15 @@ export class AuthController {
 		return await this.userService.create(createUserDto);
 	}
 
-	@UseGuards(RefreshJwtGuard)
 	@Post('refresh')
+	@UseGuards(JwtGuard)
 	async refrshToken(@Request() req) {
 		return this.authService.refreshToken(req.user);
+	}
+
+	@Get('profile')
+	@UseGuards(JwtGuard)
+	getProfile(@Request() req) {
+		return req.user;
 	}
 }
