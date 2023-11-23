@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { UserService } from 'src/user/user.service';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { UserService } from '../user/user.service';
 import { TokenUserDto } from './dto/token-user.dto';
 
 @Injectable()
@@ -48,7 +48,7 @@ export class AuthService {
 				},
 				{
 					secret: this.configService.get<string>('JWT_SECRET'),
-					expiresIn: '15m',
+					expiresIn: this.configService.get<string>('EXPIRED_JWT_SECRET'),
 				},
 			),
 			this.jwtService.signAsync(
@@ -62,7 +62,7 @@ export class AuthService {
 				},
 				{
 					secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-					expiresIn: '7d',
+					expiresIn: this.configService.get<string>('EXPIRED_JWT_REFRESH_SECRET'),
 				},
 			),
 		]);
@@ -95,6 +95,8 @@ export class AuthService {
 
 	getExpiresIn(token: string) {
 		const decodedToken = this.jwtService.decode(token);
-		return new Date(decodedToken.exp * 1000) > new Date();
+		const timeExpires = new Date(decodedToken.exp * 1000);
+		const isExpires = timeExpires < new Date();
+		return { isExpires: isExpires, timeExpires: timeExpires };
 	}
 }

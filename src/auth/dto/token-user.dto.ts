@@ -1,4 +1,4 @@
-import { Posts } from 'src/posts/entities/post.entity';
+import { Posts } from '../../posts/entities/post.entity';
 
 export class TokenUserDto {
 	readonly id: number;
