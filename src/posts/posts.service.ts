@@ -17,7 +17,7 @@ export class PostsService {
 
 	async create(createPostDto: CreatePostDto) {
 		try {
-			const user = await this.userRepository.findOneBy({ id: createPostDto.userId });
+			const user = await this.userRepository.findOneByOrFail({ id: createPostDto.userId });
 			const newPost = new Posts();
 			newPost.title = createPostDto.title;
 			newPost.content = createPostDto.content;
@@ -28,7 +28,7 @@ export class PostsService {
 			throw new HttpException(
 				{
 					status: HttpStatus.INTERNAL_SERVER_ERROR,
-					error: error.detail,
+					error: error.detail || error.message,
 				},
 				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
