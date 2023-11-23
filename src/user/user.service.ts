@@ -25,7 +25,7 @@ export class UserService {
 			throw new HttpException(
 				{
 					status: HttpStatus.INTERNAL_SERVER_ERROR,
-					error: error.detail,
+					error: error.detail || error.message,
 				},
 				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
