@@ -2,6 +2,9 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Typeorm book
+[typeorm book](https://orkhan.gitbook.io/typeorm/docs/active-record-data-mapper)
+
 ## Installation
 
 ```bash
