@@ -10,19 +10,16 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { AuthUserDto } from './dto/auth-user.dto';
+import { RefreshTokenDto } from './dto/refresh-totken.dto';
 import { JwtGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 @ApiTags('Auth')
 @ApiBearerAuth() // Need to swagger
 export class AuthController {
-	constructor(
-		private authService: AuthService,
-		private userService: UserService,
-	) {}
+	constructor(private authService: AuthService) {}
 
 	// @UseGuards(LocalAuthGuard)
 	@Post('login')
@@ -46,13 +43,17 @@ export class AuthController {
 
 	@Post('register')
 	async registerUser(@Body() createUserDto: CreateUserDto) {
-		return await this.userService.create(createUserDto);
+		return await this.authService.signUp(createUserDto);
 	}
 
 	@Post('refresh')
-	@UseGuards(JwtGuard)
-	async refrshToken(@Request() req) {
-		return this.authService.refreshToken(req.user);
+	async refreshToken(@Body() refreshToken: RefreshTokenDto) {
+		return await this.authService.refreshToken(refreshToken.refreshToken);
+	}
+
+	@Post('expries-in')
+	async expriesIn(@Body() refreshToken: RefreshTokenDto) {
+		return this.authService.getExpiresIn(refreshToken.refreshToken);
 	}
 
 	@Get('profile')

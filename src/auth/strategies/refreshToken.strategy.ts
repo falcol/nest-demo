@@ -1,7 +1,10 @@
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { config } from 'dotenv';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 config({ path: '.env' });
+
+@Injectable()
 export class RefreshJwtStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
 	constructor() {
 		super({
@@ -12,6 +15,6 @@ export class RefreshJwtStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
 	}
 
 	async validate(payload: any) {
-		return { user: payload.sub, username: payload.username };
+		return { user: payload.sub, email: payload.email };
 	}
 }
