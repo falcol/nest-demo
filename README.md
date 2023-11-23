@@ -34,6 +34,12 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Format
+
+```bash
+npm run format
+```
+
 ## Scaffolding
 
 ```bash
@@ -43,7 +49,32 @@ nest g res folder_name
 ## Migrate
 ```bash
 npm run migration:generate --name=init1
-npm run start:dev
+npm run build
 npm run migration:run
 ```
 
+## Debug Launch.json vscode
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "NestJS Debug",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run-script",
+                "start:debug"
+            ],
+            "timeout": 10000,
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "restart": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        }
+    ]
+}
+```
