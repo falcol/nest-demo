@@ -33,7 +33,11 @@ export class UserService {
 	}
 
 	async findAll() {
-		return this.userRepository.find({ relations: ['posts'] });
+		return await this.userRepository
+			.createQueryBuilder('user')
+			.select(['user.username', 'user.email', 'posts.title', 'posts.content'])
+			.leftJoin('user.posts', 'posts')
+			.getMany();
 	}
 
 	async findUserByEmail(email: string) {
