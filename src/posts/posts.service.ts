@@ -43,8 +43,14 @@ export class PostsService {
 			.getMany();
 	}
 
-	async findOne(id: number) {
-		return await this.postRepository.findOneBy({ id: id });
+	async findOne(postId: number) {
+		// return await this.postRepository.findOne({ where: { id: id }, relations: ['user'] });
+		return await this.postRepository
+			.createQueryBuilder('posts')
+			.innerJoin('posts.user', 'user')
+			.select(['posts.title', 'posts.content', 'user.username', 'user.email'])
+			.where('posts.id = :postId', { postId })
+			.getOne();
 	}
 
 	async update(id: number, updatePostDto: UpdatePostDto) {
