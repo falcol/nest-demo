@@ -1,14 +1,6 @@
-import {
-	Body,
-	Controller,
-	Get,
-	HttpException,
-	HttpStatus,
-	Post,
-	Request,
-	UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RedisService } from '../redis-ws/redis.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthService } from './auth.service';
 import { AuthUserDto } from './dto/auth-user.dto';
@@ -19,15 +11,15 @@ import { JwtGuard } from './guards/jwt-auth.guard';
 @ApiTags('Auth')
 @ApiBearerAuth() // Need to swagger
 export class AuthController {
-	constructor(private authService: AuthService) {}
+	constructor(
+		private authService: AuthService,
+		private redisService: RedisService,
+	) {}
 
 	// @UseGuards(LocalAuthGuard)
 	@Post('login')
 	async login(@Body() authUserDto: AuthUserDto) {
-		const checkUser = await this.authService.validateUser(
-			authUserDto.email,
-			authUserDto.password,
-		);
+		const checkUser = await this.authService.validateUser(authUserDto.email, authUserDto.password);
 		if (checkUser) {
 			return await this.authService.login(checkUser);
 		}
@@ -60,5 +52,10 @@ export class AuthController {
 	@UseGuards(JwtGuard)
 	getProfile(@Request() req) {
 		return req.user;
+	}
+
+	@Get('publish')
+	async publishTest() {
+		return await this.redisService.publish('test', 'mess');
 	}
 }

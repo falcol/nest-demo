@@ -6,6 +6,9 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import typeorm from './config/typeOrm.config';
 import { PostsModule } from './posts/posts.module';
+import { EventsModule } from './redis-ws/events.module';
+import { RedisModule } from './redis-ws/redis.module';
+import { RedisService } from './redis-ws/redis.service';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -22,8 +25,10 @@ import { UserModule } from './user/user.module';
 		AuthModule,
 		UserModule,
 		PostsModule,
+		RedisModule,
+		EventsModule,
 	],
 	controllers: [AppController],
-	providers: [AppService],
+	providers: [RedisService, AppService],
 })
 export class AppModule {}

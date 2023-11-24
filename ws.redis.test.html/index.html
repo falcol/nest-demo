@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Chat Application</title>
+		<script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+	</head>
+	<body>
+		<h1>Chat Application</h1>
+		<div id="messages"></div>
+		<input type="text" id="channel" placeholder="Enter channel" />
+		<input type="text" id="message" placeholder="Enter message" />
+		<button id="send-button">Send</button>
+	</body>
+	<script>
+		const socket = io("http://localhost:3000", { transports: ["websocket"] });
+
+		socket.on("connect", () => {
+			console.log("Connected to chat server");
+		});
+
+		socket.emit('subscribe', 'test');
+
+		socket.on("newMessage_1", (data) => {
+			const messageElement = document.createElement("div");
+			messageElement.textContent = `${JSON.stringify(data)}`;
+			document.getElementById("messages").appendChild(messageElement);
+		});
+
+		socket.on("messageToClient_test", (data) => {
+			const messageElement = document.createElement("div");
+			messageElement.textContent = `${JSON.stringify(data)}`;
+			document.getElementById("messages").appendChild(messageElement);
+		});
+
+		const sendMessage = () => {
+			const channelInput = document.getElementById("channel");
+			const messageInput = document.getElementById("message");
+			const channel = channelInput.value;
+			const message = messageInput.value;
+
+			socket.emit("newMessage_1", {
+				channel,
+				message,
+			});
+
+			messageInput.value = "";
+		};
+
+		document.getElementById("send-button").addEventListener("click", sendMessage);
+	</script>
+</html>
