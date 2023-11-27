@@ -1,4 +1,4 @@
-# Nestjs + Webdocket(docket.io) + Redis Demo
+# Nestjs auth + Websocket(socket.io) + Redis Demo
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
