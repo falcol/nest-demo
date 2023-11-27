@@ -16,12 +16,12 @@ import { UserModule } from './user/user.module';
 		ConfigModule.forRoot({
 			isGlobal: true,
 			load: [typeorm],
+			envFilePath: '.env',
 		}),
 		TypeOrmModule.forRootAsync({
 			inject: [ConfigService],
 			useFactory: async (configService: ConfigService) => configService.get('typeorm'),
 		}),
-		ConfigModule.forRoot({ envFilePath: '.env' }),
 		AuthModule,
 		UserModule,
 		PostsModule,

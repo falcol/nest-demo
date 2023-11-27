@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Chat Application</title>
-		<script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+		<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 	</head>
 	<body>
 		<h1>Chat Application</h1>
@@ -14,40 +14,58 @@
 		<button id="send-button">Send</button>
 	</body>
 	<script>
-		const socket = io("http://localhost:3000", { transports: ["websocket"] });
-
-		socket.on("connect", () => {
-			console.log("Connected to chat server");
+		const token =
+			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOnsidXNlcm5hbWUiOiJUZXN0IiwiZW1haWwiOiJlbWFpbEBnbWFpbC5jb20iLCJpc0FjdGl2ZSI6dHJ1ZX0sImVtYWlsIjoiZW1haWxAZ21haWwuY29tIiwiaWF0IjoxNzAxMDU2NzgxLCJleHAiOjE3MDExNDMxODF9.Fa1sUU_vwTtNRFQ5ezqzyJTgz8Jzv5BiAqwajl9-bag';
+		const socket = io('http://localhost:3000', {
+			transports: ['websocket'],
+			auth: {
+				token: token,
+			},
 		});
 
-		socket.emit('subscribe', 'test');
-
-		socket.on("newMessage_1", (data) => {
-			const messageElement = document.createElement("div");
-			messageElement.textContent = `${JSON.stringify(data)}`;
-			document.getElementById("messages").appendChild(messageElement);
+		socket.on('connect', () => {
+			console.log('Connected to chat server');
+			socket.emit('subscribe', 'test');
 		});
 
-		socket.on("messageToClient_test", (data) => {
-			const messageElement = document.createElement("div");
+
+		socket.on('newMessage', (data) => {
+			const messageElement = document.createElement('div');
+			console.log('newMessage: ' + JSON.stringify(data));
 			messageElement.textContent = `${JSON.stringify(data)}`;
-			document.getElementById("messages").appendChild(messageElement);
+			document.getElementById('messages').appendChild(messageElement);
+		});
+
+		socket.on('messageToClient_test', (data) => {
+			const messageElement = document.createElement('div');
+			console.log('messageToClient_test ' + JSON.stringify(data));
+			messageElement.textContent = `${JSON.stringify(data)}`;
+			document.getElementById('messages').appendChild(messageElement);
 		});
 
 		const sendMessage = () => {
-			const channelInput = document.getElementById("channel");
-			const messageInput = document.getElementById("message");
+			const channelInput = document.getElementById('channel');
+			const messageInput = document.getElementById('message');
 			const channel = channelInput.value;
 			const message = messageInput.value;
 
-			socket.emit("newMessage_1", {
+			socket.emit('newMessage', {
 				channel,
 				message,
 			});
 
-			messageInput.value = "";
+			messageInput.value = '';
 		};
 
-		document.getElementById("send-button").addEventListener("click", sendMessage);
+		socket.on('disconnect', (data) => {
+			console.log('disconnect');
+			console.log(data);
+		});
+
+		socket.on('unauthorized', (error) => {
+			console.error(error.message); // Should log '401 Unauthorized'
+		});
+
+		document.getElementById('send-button').addEventListener('click', sendMessage);
 	</script>
 </html>

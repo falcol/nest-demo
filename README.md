@@ -1,9 +1,17 @@
+# Nestjs + Webdocket(docket.io) + Redis Demo
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Typeorm book
 [typeorm book](https://orkhan.gitbook.io/typeorm/docs/active-record-data-mapper)
+
+
+## Websocket test
+```
+1. Auth in api
+2. Get access token change in index.html
+```
 
 ## Installation
 

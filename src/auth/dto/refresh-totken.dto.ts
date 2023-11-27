@@ -7,5 +7,5 @@ export class RefreshTokenDto {
 		example: '12345678',
 	})
 	@IsNotEmpty()
-	readonly refreshToken: string;
+	readonly token: string;
 }

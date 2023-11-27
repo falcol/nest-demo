@@ -1,6 +1,7 @@
+import { ConfigService } from '@nestjs/config';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, UseGuards } from '@nestjs/common';
 import {
 	MessageBody,
 	OnGatewayConnection,
@@ -11,12 +12,14 @@ import {
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
+import { WsJwtGuard } from '../auth/guards/ws-jwt-guard .guard';
 
 @WebSocketGateway({
 	cors: true,
 	transports: ['websocket'],
 })
 @Injectable()
+@UseGuards(WsJwtGuard)
 export class EventsGateway implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect {
 	@WebSocketServer()
 	server: Server;
@@ -24,17 +27,19 @@ export class EventsGateway implements OnModuleInit, OnGatewayConnection, OnGatew
 	private redisClient: Redis;
 	private socketState: Map<string, Socket> = new Map();
 
+	constructor(private configService: ConfigService) {}
+
 	onModuleInit() {
 		this.server.on('connection', (socket) => {
-			console.log(socket.id);
 			console.log('Connected');
-
-			this.server.emit('newMessage', 'initdata');
 		});
 	}
 
 	afterInit() {
-		this.redisClient = new Redis();
+		this.redisClient = new Redis({
+			host: this.configService.get<string>('REDIS_HOST'),
+			port: this.configService.get<number>('REDIS_PORT'),
+		});
 	}
 
 	async sendData(message: string) {
@@ -58,7 +63,7 @@ export class EventsGateway implements OnModuleInit, OnGatewayConnection, OnGatew
 	@SubscribeMessage('newMessage')
 	onNewMessage(@MessageBody() body: any) {
 		console.log(body);
-		this.server.emit('newMessage_1', {
+		this.server.emit('newMessage', {
 			msg: 'New Message',
 			content: body,
 		});

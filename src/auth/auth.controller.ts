@@ -4,6 +4,7 @@ import { RedisService } from '../redis-ws/redis.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthService } from './auth.service';
 import { AuthUserDto } from './dto/auth-user.dto';
+import { RedisPublishDto } from './dto/redis-pub.dto';
 import { RefreshTokenDto } from './dto/refresh-totken.dto';
 import { JwtGuard } from './guards/jwt-auth.guard';
 
@@ -40,12 +41,12 @@ export class AuthController {
 
 	@Post('refresh')
 	async refreshToken(@Body() refreshToken: RefreshTokenDto) {
-		return await this.authService.refreshToken(refreshToken.refreshToken);
+		return await this.authService.refreshToken(refreshToken.token);
 	}
 
 	@Post('expries-in')
 	async expriesIn(@Body() refreshToken: RefreshTokenDto) {
-		return this.authService.getExpiresIn(refreshToken.refreshToken);
+		return this.authService.getExpiresIn(refreshToken.token);
 	}
 
 	@Get('profile')
@@ -54,8 +55,8 @@ export class AuthController {
 		return req.user;
 	}
 
-	@Get('publish')
-	async publishTest() {
-		return await this.redisService.publish('test', 'mess');
+	@Post('publish')
+	async publishTest(@Body() redisPublishDto: RedisPublishDto) {
+		return await this.redisService.publish(redisPublishDto.channel, redisPublishDto.data);
 	}
 }
