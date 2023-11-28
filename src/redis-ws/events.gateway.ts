@@ -62,6 +62,7 @@ export class EventsGateway implements OnModuleInit, OnGatewayConnection, OnGatew
 
 	@SubscribeMessage('newMessage')
 	onNewMessage(@MessageBody() body: any) {
+		// client: Socket, body: any
 		console.log(body);
 		this.server.emit('newMessage', {
 			msg: 'New Message',

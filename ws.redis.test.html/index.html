@@ -15,7 +15,7 @@
 	</body>
 	<script>
 		const token =
-			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOnsidXNlcm5hbWUiOiJUZXN0IiwiZW1haWwiOiJlbWFpbEBnbWFpbC5jb20iLCJpc0FjdGl2ZSI6dHJ1ZX0sImVtYWlsIjoiZW1haWxAZ21haWwuY29tIiwiaWF0IjoxNzAxMDU2NzgxLCJleHAiOjE3MDExNDMxODF9.Fa1sUU_vwTtNRFQ5ezqzyJTgz8Jzv5BiAqwajl9-bag';
+			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOnsidXNlcm5hbWUiOiJUZXN0IiwiZW1haWwiOiJlbWFpbEBnbWFpbC5jb20iLCJpc0FjdGl2ZSI6dHJ1ZX0sImVtYWlsIjoiZW1haWxAZ21haWwuY29tIiwiaWF0IjoxNzAxMTQzMjM2LCJleHAiOjE3MDEyMjk2MzZ9.Wv3hE_U8j_QmTYyvpFhYWvYBUNzNnZ3ZFzCx_evQUhU';
 		const socket = io('http://localhost:3000', {
 			transports: ['websocket'],
 			auth: {
@@ -64,6 +64,7 @@
 
 		socket.on('unauthorized', (error) => {
 			console.error(error.message); // Should log '401 Unauthorized'
+			alert(error.message)
 		});
 
 		document.getElementById('send-button').addEventListener('click', sendMessage);
