@@ -1,13 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import {
-	BeforeInsert,
-	Column,
-	CreateDateColumn,
-	Entity,
-	OneToMany,
-	PrimaryGeneratedColumn,
-	UpdateDateColumn,
-} from 'typeorm';
+import { BeforeInsert, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { Posts } from '../../posts/entities/post.entity';
 
 @Entity('users')

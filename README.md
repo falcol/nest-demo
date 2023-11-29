@@ -64,6 +64,7 @@ nest g res folder_name
 npm run migration:generate --name=init1
 npm run build
 npm run migration:run
+-> If not migrate -> npm run build
 ```
 
 ## Debug Launch.json vscode

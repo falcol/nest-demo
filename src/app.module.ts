@@ -10,6 +10,7 @@ import { EventsModule } from './redis-ws/events.module';
 import { RedisModule } from './redis-ws/redis.module';
 import { RedisService } from './redis-ws/redis.service';
 import { UserModule } from './user/user.module';
+import { IfiledbModule } from './ifiledb/ifiledb.module';
 
 @Module({
 	imports: [
@@ -27,6 +28,7 @@ import { UserModule } from './user/user.module';
 		PostsModule,
 		RedisModule,
 		EventsModule,
+		IfiledbModule,
 	],
 	controllers: [AppController],
 	providers: [RedisService, AppService],
