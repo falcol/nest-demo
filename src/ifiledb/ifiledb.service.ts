@@ -189,20 +189,22 @@ export class IfiledbService {
 	}
 
 	validateGroupedData(groupedData: object) {
+		const errors = [];
 		for (const [key, group] of Object.entries(groupedData)) {
 			const sortedGroup = group.sort((a, b) => a.order - b.order);
 			const lastRow = sortedGroup[sortedGroup.length - 1];
 			if (lastRow.to === undefined || lastRow.to === null || lastRow.to === '') {
-				throw new HttpException(`Date 'to' must be set for the last order in group ${key}`, HttpStatus.BAD_REQUEST);
+				errors.push(`Date 'to' must be set for the last order in group ${key}`);
 			}
 			for (const row of sortedGroup.slice(0, -1)) {
-				if (row.to !== undefined && row.to !== null && row.to !== '') {
-					throw new HttpException(
-						`Date 'to' can only be set for the last order in group ${key} at order ${lastRow.order}`,
-						HttpStatus.BAD_REQUEST,
-					);
+				const errStr = `Date 'to' can only be set for the last order in group ${key} at order ${lastRow.order}`;
+				if (row.to !== undefined && row.to !== null && row.to !== '' && !errors.includes(errStr)) {
+					errors.push(errStr);
 				}
 			}
+		}
+		if (errors.length > 0) {
+			throw new HttpException({ errors: errors, status: HttpStatus.BAD_REQUEST }, HttpStatus.BAD_REQUEST);
 		}
 	}
 
