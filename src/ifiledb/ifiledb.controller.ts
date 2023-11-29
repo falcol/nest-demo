@@ -53,6 +53,7 @@ export class IfiledbController {
 	@ApiOperation({ summary: 'Upload CSV file' })
 	async getCsvData(@UploadedFile() file: Express.Multer.File): Promise<any> {
 		const buffer = Buffer.from(file.buffer);
-		return await this.ifiledbService.parseCsvBuffer(buffer);
+		const dataIfile = await this.ifiledbService.parseCsvBuffer(buffer);
+		return await this.ifiledbService.insertIfile(dataIfile);
 	}
 }

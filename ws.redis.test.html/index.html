@@ -65,6 +65,7 @@
 		socket.on('unauthorized', (error) => {
 			console.error(error.message); // Should log '401 Unauthorized'
 			alert(error.message)
+			socket.close()
 		});
 
 		document.getElementById('send-button').addEventListener('click', sendMessage);

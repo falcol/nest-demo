@@ -1,12 +1,20 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import csv from 'csv-parser';
 import detect from 'detect-file-encoding-and-language';
 import stream from 'stream';
+import { Repository } from 'typeorm';
 import { CreateIfiledbDto } from './dto/create-ifiledb.dto';
 import { UpdateIfiledbDto } from './dto/update-ifiledb.dto';
+import { Ifiledb } from './entities/ifiledb.entity';
 
 @Injectable()
 export class IfiledbService {
+	constructor(
+		@InjectRepository(Ifiledb)
+		private ifileRepository: Repository<Ifiledb>,
+	) {}
+
 	create(createIfiledbDto: CreateIfiledbDto) {
 		return { data: createIfiledbDto };
 	}
@@ -27,9 +35,9 @@ export class IfiledbService {
 		return `This action removes a #${id} ifiledb`;
 	}
 
-	async parseCsvBuffer(buffer: Buffer) {
+	async parseCsvBuffer(buffer: Buffer): Promise<CreateIfiledbDto[] | any> {
 		// Set init data
-		const results = [];
+		const results: CreateIfiledbDto[] = [];
 		// 1 file csv có dạng như sau id,name, from, to, order, s1_name,s2_name,color_name
 		const expectedHeaders = ['id', 'name', 'from', 'to', 'order', 's1_name', 's2_name', 'color_name'];
 		let rowCount = 0;
@@ -196,5 +204,30 @@ export class IfiledbService {
 				}
 			}
 		}
+	}
+
+	async insertIfile(ifilesData: CreateIfiledbDto[]) {
+		const iFilesArr = ifilesData.map((data) => {
+			const newIfile = new Ifiledb();
+			newIfile.id = data.id;
+			newIfile.name = data.name;
+			newIfile.from = data.from;
+			newIfile.to = data.to;
+			newIfile.order = data.order;
+			newIfile.s1_name = data.s1_name;
+			newIfile.s2_name = data.s2_name;
+			newIfile.color_name = data.color_name;
+			return newIfile;
+		});
+
+		const result = await this.ifileRepository
+			.createQueryBuilder('ifile')
+			.insert()
+			.into(Ifiledb)
+			.values(iFilesArr)
+			.returning('*')
+			.execute();
+
+		return result.generatedMaps;
 	}
 }
