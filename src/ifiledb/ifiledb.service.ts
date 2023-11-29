@@ -189,7 +189,22 @@ export class IfiledbService {
 	}
 
 	async groupDataDb(groupedData: object, id: string, from: string) {
-		const dataInDB = await this.ifileRepository.find({ where: { id: id, from: from } });
+		const dataInDB = await this.ifileRepository
+			.createQueryBuilder('ifile')
+			.select([
+				'ifile.id',
+				'ifile.name',
+				'ifile.from',
+				'ifile.to',
+				'ifile.order',
+				'ifile.s1_name',
+				'ifile.s2_name',
+				'ifile.color_name',
+			])
+			.where({ id: id, from: from })
+			.distinct(true)
+			.getRawMany();
+
 		dataInDB.forEach((data) => {
 			const idFromKey = `${data.id}-${data.from}`;
 			if (!groupedData[idFromKey]) {
