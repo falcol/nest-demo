@@ -69,7 +69,7 @@ export class IfiledbService {
 						reject(error);
 					}
 				})
-				.on('data', (row) => {
+				.on('data', async (row) => {
 					rowCount++;
 					try {
 						const isEmptyRow = this.isEmptyRows(row, rowCount, errorRows);
@@ -198,14 +198,14 @@ export class IfiledbService {
 		const dataInDB = await this.ifileRepository
 			.createQueryBuilder('ifile')
 			.select([
-				'ifile.id',
-				'ifile.name',
-				'ifile.from',
-				'ifile.to',
-				'ifile.order',
-				'ifile.s1_name',
-				'ifile.s2_name',
-				'ifile.color_name',
+				'ifile.id as id',
+				'ifile.name as name',
+				'ifile.from as from',
+				'ifile.to as to',
+				'ifile.order as order',
+				'ifile.s1_name as s1_name',
+				'ifile.s2_name as s2_name',
+				'ifile.color_name as color_name',
 			])
 			.where({ id: id, from: from })
 			.distinct(true)
