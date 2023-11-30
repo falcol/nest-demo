@@ -69,26 +69,29 @@ export class IfiledbService {
 						reject(error);
 					}
 				})
-				.on('data', async (row) => {
+				.on('data', (row) => {
 					rowCount++;
-					const data = new CreateIfiledbDto(row);
 					try {
-						// Trường hợp header hoặc 1 row nào đó không đủ 8 collumn hoặc thừa ra (bất kể 1 row nào) thì cũng bắn message
-						this.checkRow(data, headerLength, rowCount, errorRows);
-						// Validate bắt buộc nhập cột name,from trong file. Trường nào không nhập thì bắn message cấu trúc {tên hạng mục} require
-						this.checkRequiredFields(data, fieldRequired, rowCount, errorRows);
-						//  nếu trùng 1 bộ id,from thì order k được trùng lặp. Nếu trùng thì bắn lỗi  Trường hợp trùng lặp thì bắn lỗi "order duplicate"
-						this.checkOrder(data, orderMap, rowCount, errorRows);
-						// Gom data lại theo Set id, ngày from validate trùng data nếu cùng ID, From mà bộ 3 key: s1_name,s2_name,color_name trùng nhau thì báo message "Duplicate"
-						this.checkNames(data, nameMap, rowCount, errorRows);
-						// Valid ngày TO (Ngày TO chỉ được phép set cho set cho order = max(order) cuối cùng)
-						this.groupData(data, groupedData);
-						if (data.id != oldQuery.id || oldQuery.from != data.from) {
-							oldQuery.id = data.id;
-							oldQuery.from = data.from;
-							query.push(oldQuery);
+						const isEmptyRow = this.isEmptyRows(row, rowCount, errorRows);
+						if (!isEmptyRow) {
+							const data = new CreateIfiledbDto(row);
+							// Trường hợp header hoặc 1 row nào đó không đủ 8 collumn hoặc thừa ra (bất kể 1 row nào) thì cũng bắn message
+							this.checkRow(data, headerLength, rowCount, errorRows);
+							// Validate bắt buộc nhập cột name,from trong file. Trường nào không nhập thì bắn message cấu trúc {tên hạng mục} require
+							this.checkRequiredFields(data, fieldRequired, rowCount, errorRows);
+							//  nếu trùng 1 bộ id,from thì order k được trùng lặp. Nếu trùng thì bắn lỗi  Trường hợp trùng lặp thì bắn lỗi "order duplicate"
+							this.checkOrder(data, orderMap, rowCount, errorRows);
+							// Gom data lại theo Set id, ngày from validate trùng data nếu cùng ID, From mà bộ 3 key: s1_name,s2_name,color_name trùng nhau thì báo message "Duplicate"
+							this.checkNames(data, nameMap, rowCount, errorRows);
+							// Valid ngày TO (Ngày TO chỉ được phép set cho set cho order = max(order) cuối cùng)
+							this.groupData(data, groupedData);
+							if (data.id != oldQuery.id || oldQuery.from != data.from) {
+								oldQuery.id = data.id;
+								oldQuery.from = data.from;
+								query.push(oldQuery);
+							}
+							results.push(data);
 						}
-						results.push(data);
 					} catch (error) {
 						bufferStream.destroy();
 						reject(error);
@@ -100,7 +103,10 @@ export class IfiledbService {
 						// Valid ngày TO (Ngày TO chỉ được phép set cho set cho order = max(order) cuối cùng)
 						await this.validateGroupedData(groupedData, errorRows);
 						if (errorRows.length > 0) {
-							throw new HttpException({ error: errorRows, status: HttpStatus.BAD_REQUEST }, HttpStatus.BAD_REQUEST);
+							throw new HttpException(
+								{ errors: errorRows, status: HttpStatus.BAD_REQUEST },
+								HttpStatus.BAD_REQUEST,
+							);
 						}
 						resolve(results);
 					} catch (error) {
@@ -121,7 +127,7 @@ export class IfiledbService {
 		if (missingHeaders.length > 0 || extraHeaders.length > 0) {
 			throw new HttpException(
 				{
-					message: 'The headers in the CSV file do not match the expected headers',
+					error: 'The headers in the CSV file do not match the expected headers',
 					missingHeaders: `${missingHeaders.join(', ')}`,
 					extraHeaders: `${extraHeaders.join(', ')}`,
 				},
@@ -224,7 +230,7 @@ export class IfiledbService {
 		for (const [key, group] of Object.entries(groupedData)) {
 			const sortedGroup = group.sort((a, b) => a.order - b.order);
 			const lastRow = sortedGroup[sortedGroup.length - 1];
-			if (lastRow.to === undefined || lastRow.to === null || lastRow.to === '') {
+			if ((lastRow.to === undefined || lastRow.to === null || lastRow.to === '') && !key.includes('undefined')) {
 				errors.push(`Date 'to' must be set for the last order in group ${key}`);
 			}
 			for (const row of sortedGroup.slice(0, -1)) {
@@ -234,6 +240,15 @@ export class IfiledbService {
 				}
 			}
 		}
+	}
+
+	isEmptyRows(row: any, rowCount: number, errors: string[]): boolean {
+		if (Object.keys(row).length === 0) {
+			errors.push(`Row ${rowCount} must not be empty`);
+			return true;
+		}
+
+		return false;
 	}
 
 	async insertIfile(ifilesData: CreateIfiledbDto[]) {
