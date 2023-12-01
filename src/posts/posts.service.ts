@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -13,18 +13,30 @@ export class PostsService {
 		private userRepository: Repository<User>,
 		@InjectRepository(Posts)
 		private postRepository: Repository<Posts>,
+		private dataSource: DataSource,
 	) {}
 
 	async create(createPostDto: CreatePostDto) {
+		const queryRunner = this.dataSource.createQueryRunner();
+
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
+
 		try {
-			const user = await this.userRepository.findOneByOrFail({ id: createPostDto.userId });
+			const user = await queryRunner.manager.findOneByOrFail(User, { id: createPostDto.userId });
 			const newPost = new Posts();
 			newPost.title = createPostDto.title;
 			newPost.content = createPostDto.content;
 			newPost.user = user;
-			const post = await this.postRepository.save(newPost);
+
+			const post = await queryRunner.manager.save(newPost);
+
+			await queryRunner.commitTransaction();
+
 			return post;
 		} catch (error) {
+			await queryRunner.rollbackTransaction();
+
 			throw new HttpException(
 				{
 					status: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -32,6 +44,8 @@ export class PostsService {
 				},
 				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
+		} finally {
+			await queryRunner.release();
 		}
 	}
 

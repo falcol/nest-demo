@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import csv from 'csv-parser';
 import detect from 'detect-file-encoding-and-language';
 import stream from 'stream';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateIfiledbDto } from './dto/create-ifiledb.dto';
 import { UpdateIfiledbDto } from './dto/update-ifiledb.dto';
 import { Ifiledb } from './entities/ifiledb.entity';
@@ -13,6 +13,7 @@ export class IfiledbService {
 	constructor(
 		@InjectRepository(Ifiledb)
 		private ifileRepository: Repository<Ifiledb>,
+		private dataSource: DataSource,
 	) {}
 
 	create(createIfiledbDto: CreateIfiledbDto) {
@@ -252,27 +253,47 @@ export class IfiledbService {
 	}
 
 	async insertIfile(ifilesData: CreateIfiledbDto[]) {
-		const iFilesArr = ifilesData.map((data) => {
-			const newIfile = new Ifiledb();
-			newIfile.id = data.id;
-			newIfile.name = data.name;
-			newIfile.from = data.from;
-			newIfile.to = data.to;
-			newIfile.order = data.order;
-			newIfile.s1_name = data.s1_name;
-			newIfile.s2_name = data.s2_name;
-			newIfile.color_name = data.color_name;
-			return newIfile;
-		});
+		const queryRunner = this.dataSource.createQueryRunner();
 
-		const result = await this.ifileRepository
-			.createQueryBuilder('ifile')
-			.insert()
-			.into(Ifiledb)
-			.values(iFilesArr)
-			.returning('*')
-			.execute();
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
 
-		return result.generatedMaps;
+		try {
+			const iFilesArr = ifilesData.map((data) => {
+				const newIfile = new Ifiledb();
+				newIfile.id = data.id;
+				newIfile.name = data.name;
+				newIfile.from = data.from;
+				newIfile.to = data.to;
+				newIfile.order = data.order;
+				newIfile.s1_name = data.s1_name;
+				newIfile.s2_name = data.s2_name;
+				newIfile.color_name = data.color_name;
+				return newIfile;
+			});
+
+			const result = await queryRunner.manager
+				.createQueryBuilder(Ifiledb, 'ifile')
+				.insert()
+				.values(iFilesArr)
+				.returning('*')
+				.execute();
+
+			await queryRunner.commitTransaction();
+
+			return result.generatedMaps;
+		} catch (error) {
+			await queryRunner.rollbackTransaction();
+
+			throw new HttpException(
+				{
+					status: HttpStatus.INTERNAL_SERVER_ERROR,
+					error: error.detail || error.message,
+				},
+				HttpStatus.INTERNAL_SERVER_ERROR,
+			);
+		} finally {
+			await queryRunner.release();
+		}
 	}
 }
