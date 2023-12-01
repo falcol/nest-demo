@@ -259,29 +259,29 @@ export class IfiledbService {
 		await queryRunner.startTransaction();
 
 		try {
-			const iFilesArr = ifilesData.map((data) => {
-				const newIfile = new Ifiledb();
-				newIfile.id = data.id;
-				newIfile.name = data.name;
-				newIfile.from = data.from;
-				newIfile.to = data.to;
-				newIfile.order = data.order;
-				newIfile.s1_name = data.s1_name;
-				newIfile.s2_name = data.s2_name;
-				newIfile.color_name = data.color_name;
-				return newIfile;
-			});
+			// Split the data into chunks of 1000 items
+			const chunkSize = 1000;
+			for (let i = 0; i < ifilesData.length; i += chunkSize) {
+				const chunk = ifilesData.slice(i, i + chunkSize);
 
-			const result = await queryRunner.manager
-				.createQueryBuilder(Ifiledb, 'ifile')
-				.insert()
-				.values(iFilesArr)
-				.returning('*')
-				.execute();
+				const iFilesArr = chunk.map((data) => {
+					const newIfile = new Ifiledb();
+					newIfile.id = data.id;
+					newIfile.name = data.name;
+					newIfile.from = data.from;
+					newIfile.to = data.to;
+					newIfile.order = data.order;
+					newIfile.s1_name = data.s1_name;
+					newIfile.s2_name = data.s2_name;
+					newIfile.color_name = data.color_name;
+					return newIfile;
+				});
+
+				await queryRunner.manager.createQueryBuilder(Ifiledb, 'ifile').insert().values(iFilesArr).execute();
+			}
 
 			await queryRunner.commitTransaction();
-
-			return result.generatedMaps;
+			return { status: HttpStatus.CREATED, message: 'Insert to DB success' };
 		} catch (error) {
 			await queryRunner.rollbackTransaction();
 
