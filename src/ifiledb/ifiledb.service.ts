@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToClass } from 'class-transformer';
 import csv from 'csv-parser';
 import detect from 'detect-file-encoding-and-language';
 import stream from 'stream';
@@ -265,16 +266,7 @@ export class IfiledbService {
 				const chunk = ifilesData.slice(i, i + chunkSize);
 
 				const iFilesArr = chunk.map((data) => {
-					const newIfile = new Ifiledb();
-					newIfile.id = data.id;
-					newIfile.name = data.name;
-					newIfile.from = data.from;
-					newIfile.to = data.to;
-					newIfile.order = data.order;
-					newIfile.s1_name = data.s1_name;
-					newIfile.s2_name = data.s2_name;
-					newIfile.color_name = data.color_name;
-					return newIfile;
+					return plainToClass(Ifiledb, data);
 				});
 
 				await queryRunner.manager.createQueryBuilder(Ifiledb, 'ifile').insert().values(iFilesArr).execute();
