@@ -1,21 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { plainToClass } from 'class-transformer';
 import csv from 'csv-parser';
 import detect from 'detect-file-encoding-and-language';
 import stream from 'stream';
-import { DataSource, Repository } from 'typeorm';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateIfiledbDto } from './dto/create-ifiledb.dto';
 import { UpdateIfiledbDto } from './dto/update-ifiledb.dto';
-import { Ifiledb } from './entities/ifiledb.entity';
 
 @Injectable()
 export class IfiledbService {
-	constructor(
-		@InjectRepository(Ifiledb)
-		private ifileRepository: Repository<Ifiledb>,
-		private dataSource: DataSource,
-	) {}
+	constructor(private readonly prismaService: PrismaService) {}
 
 	create(createIfiledbDto: CreateIfiledbDto) {
 		return { data: createIfiledbDto };
@@ -197,35 +190,46 @@ export class IfiledbService {
 	}
 
 	async groupDataDb(groupedData: object, id: string, from: string) {
-		const dataInDB = await this.ifileRepository
-			.createQueryBuilder('ifile')
-			.select([
-				'ifile.id as id',
-				'ifile.name as name',
-				'ifile.from as from',
-				'ifile.to as to',
-				'ifile.order as order',
-				'ifile.s1_name as s1_name',
-				'ifile.s2_name as s2_name',
-				'ifile.color_name as color_name',
-			])
-			.where({ id: id, from: from })
-			.distinct(true)
-			.getRawMany();
+		try {
+			const dataInDB = await this.prismaService.ifiledb.findMany({
+				where: {
+					id: id,
+					from: from,
+				},
+				distinct: ['id', 'name', 'from', 'to', 'order', 's1_name', 's2_name', 'color_name'],
+				select: {
+					id: true,
+					name: true,
+					from: true,
+					to: true,
+					order: true,
+					s1_name: true,
+					s2_name: true,
+					color_name: true,
+				},
+			});
 
-		dataInDB.forEach((data) => {
-			const idFromKey = `${data.id}-${data.from}`;
-			if (!groupedData[idFromKey]) {
-				groupedData[idFromKey] = [];
-			}
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const { pk, ...result } = data;
-			const resultDto = new CreateIfiledbDto(result);
-			if (!groupedData[idFromKey].some((obj) => JSON.stringify(obj) === JSON.stringify(resultDto))) {
-				groupedData[idFromKey].push(resultDto);
-			}
-		});
-		return groupedData;
+			dataInDB.forEach((data) => {
+				const idFromKey = `${data.id}-${data.from}`;
+				if (!groupedData[idFromKey]) {
+					groupedData[idFromKey] = [];
+				}
+				const resultDto = new CreateIfiledbDto(data);
+				if (!groupedData[idFromKey].some((obj) => JSON.stringify(obj) === JSON.stringify(resultDto))) {
+					groupedData[idFromKey].push(resultDto);
+				}
+			});
+
+			return groupedData;
+		} catch (error) {
+			throw new HttpException(
+				{
+					status: HttpStatus.INTERNAL_SERVER_ERROR,
+					error: error.message,
+				},
+				HttpStatus.INTERNAL_SERVER_ERROR,
+			);
+		}
 	}
 
 	async validateGroupedData(groupedData: object, errors: string[]) {
@@ -254,38 +258,31 @@ export class IfiledbService {
 	}
 
 	async insertIfile(ifilesData: CreateIfiledbDto[]) {
-		const queryRunner = this.dataSource.createQueryRunner();
-
-		await queryRunner.connect();
-		await queryRunner.startTransaction();
-
 		try {
 			// Split the data into chunks of 1000 items
 			const chunkSize = 1000;
+			const createdIfiles = [];
+
 			for (let i = 0; i < ifilesData.length; i += chunkSize) {
 				const chunk = ifilesData.slice(i, i + chunkSize);
 
-				const iFilesArr = chunk.map((data) => {
-					return plainToClass(Ifiledb, data);
-				});
+				// Create the ifiles in a transaction
+				const createdChunk = await this.prismaService.$transaction(
+					chunk.map((data) => this.prismaService.ifiledb.create({ data })),
+				);
 
-				await queryRunner.manager.createQueryBuilder(Ifiledb, 'ifile').insert().values(iFilesArr).execute();
+				createdIfiles.push(...createdChunk);
 			}
 
-			await queryRunner.commitTransaction();
-			return { status: HttpStatus.CREATED, message: 'Insert to DB success' };
+			return createdIfiles;
 		} catch (error) {
-			await queryRunner.rollbackTransaction();
-
 			throw new HttpException(
 				{
 					status: HttpStatus.INTERNAL_SERVER_ERROR,
-					error: error.detail || error.message,
+					error: error.message,
 				},
 				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
-		} finally {
-			await queryRunner.release();
 		}
 	}
 }

@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { config } from 'dotenv';
-import { RedisService } from 'src/redis-ws/redis.service';
-import { User } from '../user/entities/user.entity';
+import { RedisService } from '../redis-ws/redis.service';
 import { UserService } from '../user/user.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -14,7 +12,6 @@ config({ path: '.env' });
 	providers: [AuthService, JwtStrategy, RefreshJwtStrategy, UserService, RedisService],
 	controllers: [AuthController],
 	imports: [
-		TypeOrmModule.forFeature([User]),
 		JwtModule.register({
 			secret: `${process.env.JWT_SECRET}`,
 			signOptions: { expiresIn: '10h' },

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserService } from '../user/user.service';
 import { TokenUserDto } from './dto/token-user.dto';
@@ -13,9 +14,13 @@ export class AuthService {
 		private configService: ConfigService,
 	) {}
 
+	async validatePassword(password: string, confirmPassword: string): Promise<boolean> {
+		return bcrypt.compare(password, confirmPassword);
+	}
+
 	async validateUser(email: string, password: string): Promise<TokenUserDto | any> {
 		const user = await this.userService.findUserByEmail(email);
-		if (user && (await user.validatePassword(password))) {
+		if (user && (await this.validatePassword(password, user.password))) {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const { password, ...result } = user;
 			return result;

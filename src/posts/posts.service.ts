@@ -1,70 +1,81 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { Posts } from './entities/post.entity';
 
 @Injectable()
 export class PostsService {
-	constructor(
-		@InjectRepository(User)
-		private userRepository: Repository<User>,
-		@InjectRepository(Posts)
-		private postRepository: Repository<Posts>,
-		private dataSource: DataSource,
-	) {}
+	constructor(private readonly prismaService: PrismaService) {}
 
 	async create(createPostDto: CreatePostDto) {
-		const queryRunner = this.dataSource.createQueryRunner();
-
-		await queryRunner.connect();
-		await queryRunner.startTransaction();
-
 		try {
-			const user = await queryRunner.manager.findOneByOrFail(User, { id: createPostDto.userId });
-			const newPost = new Posts();
-			newPost.title = createPostDto.title;
-			newPost.content = createPostDto.content;
-			newPost.user = user;
+			const post = await this.prismaService.$transaction(async (prisma) => {
+				// Find the user
+				const user = await prisma.user.findUnique({
+					where: { id: createPostDto.userId },
+				});
 
-			const post = await queryRunner.manager.save(newPost);
+				if (!user) {
+					throw new Error('User not found');
+				}
 
-			await queryRunner.commitTransaction();
+				// Create the post
+				const newPost = await prisma.post.create({
+					data: {
+						title: createPostDto.title,
+						content: createPostDto.content,
+						user: {
+							connect: { id: user.id },
+						},
+					},
+				});
+
+				return newPost;
+			});
 
 			return post;
 		} catch (error) {
-			await queryRunner.rollbackTransaction();
-
 			throw new HttpException(
 				{
 					status: HttpStatus.INTERNAL_SERVER_ERROR,
-					error: error.detail || error.message,
+					error: error.message,
 				},
 				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
-		} finally {
-			await queryRunner.release();
 		}
 	}
 
 	async findAll() {
-		return await this.postRepository
-			.createQueryBuilder('posts')
-			.innerJoinAndSelect('posts.user', 'user')
-			.select(['posts', 'user.username'])
-			.getMany();
+		return await this.prismaService.post.findMany({
+			select: {
+				title: true,
+				content: true,
+				user: {
+					select: {
+						id: true,
+						username: true,
+						email: true,
+					},
+				},
+			},
+		});
 	}
 
 	async findOne(postId: number) {
-		// return await this.postRepository.findOne({ where: { id: id }, relations: ['user'] });
-		return await this.postRepository
-			.createQueryBuilder('posts')
-			.innerJoin('posts.user', 'user')
-			.select(['posts.title', 'posts.content', 'user.username', 'user.email'])
-			.where('posts.id = :postId', { postId })
-			.getOne();
+		return await this.prismaService.post.findUnique({
+			where: { id: postId },
+			select: {
+				title: true,
+				content: true,
+				user: {
+					select: {
+						id: true,
+						username: true,
+						email: true,
+					},
+				},
+			},
+		});
 	}
 
 	async update(id: number, updatePostDto: UpdatePostDto) {

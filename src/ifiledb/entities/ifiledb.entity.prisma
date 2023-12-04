@@ -1,0 +1,11 @@
+model Ifiledb {
+  pk         Int         @id @default(autoincrement())
+  id         String
+  name       String
+  from       String
+  to         String
+  order      Int
+  s1_name   String
+  s2_name   String
+  color_name String
+}

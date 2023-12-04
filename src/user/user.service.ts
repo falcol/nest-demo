@@ -1,64 +1,82 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
-	constructor(
-		@InjectRepository(User)
-		private userRepository: Repository<User>,
-		private dataSource: DataSource,
-	) {}
+	constructor(private readonly prismaService: PrismaService) {}
 
-	async create(createUserDto: CreateUserDto): Promise<User> {
-		const queryRunner = this.dataSource.createQueryRunner();
-
-		await queryRunner.connect();
-		await queryRunner.startTransaction();
-
+	async create(createUserDto: CreateUserDto): Promise<any> {
 		try {
-			const newUser = new User();
-			newUser.username = createUserDto.username;
-			newUser.email = createUserDto.email;
-			newUser.password = createUserDto.password;
+			// Hash the password
+			const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-			const createdUser = await queryRunner.manager.save(newUser);
+			// Replace the plain text password with the hashed password
+			createUserDto.password = hashedPassword;
 
-			await queryRunner.commitTransaction();
+			const createdUser = await this.prismaService.$transaction([
+				this.prismaService.user.create({
+					data: createUserDto,
+				}),
+			]);
 
-			return createdUser;
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const { password, ...newUser } = createdUser[0];
+			return newUser;
 		} catch (error) {
-			await queryRunner.rollbackTransaction();
-
 			throw new HttpException(
 				{
 					status: HttpStatus.INTERNAL_SERVER_ERROR,
-					error: error.detail || error.message,
+					error: error.message,
 				},
 				HttpStatus.INTERNAL_SERVER_ERROR,
 			);
-		} finally {
-			await queryRunner.release();
 		}
 	}
 
 	async findAll() {
-		return await this.userRepository
-			.createQueryBuilder('user')
-			.select(['user.username', 'user.email', 'posts.title', 'posts.content'])
-			.leftJoin('user.posts', 'posts')
-			.getMany();
+		return await this.prismaService.user.findMany({
+			select: {
+				email: true,
+				username: true,
+				isActive: true,
+				posts: {
+					select: {
+						title: true,
+						content: true,
+					},
+				},
+			},
+		});
 	}
 
 	async findUserByEmail(email: string) {
-		return await this.userRepository.findOneBy({ email: email });
+		return await this.prismaService.user.findUnique({
+			where: {
+				email: email,
+			},
+		});
 	}
 
-	async findOne(id: number) {
-		return await this.userRepository.findOne({ where: { id: id }, relations: ['posts'] });
+	async findOne(id: number): Promise<any> {
+		return await this.prismaService.user.findUnique({
+			where: {
+				id: Number(id),
+			},
+			select: {
+				email: true,
+				username: true,
+				isActive: true,
+				posts: {
+					select: {
+						title: true,
+						content: true,
+					},
+				},
+			},
+		});
 	}
 
 	async update(id: number, updateUserDto: UpdateUserDto) {
