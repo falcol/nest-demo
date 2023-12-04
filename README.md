@@ -59,12 +59,22 @@ npm run format
 nest g res folder_name
 ```
 
-## Migrate
+## Migrate typeorm
 ```bash
 npm run migration:generate --name=init1
 npm run build
 npm run migration:run
 -> If not migrate -> npm run build
+```
+
+## Migrate prisma  [prisma ex 1](https://notiz.dev/blog/how-to-connect-nestjs-with-prisma)  [prisma ex2](https://www.prisma.io/blog/nestjs-prisma-rest-api-7D056s1BmOL0)
+[prisma migrate ex](https://www.prisma.io/docs/concepts/components/prisma-migrate/mental-model)
+```bash
+npx prisma db push
+```
+```bash
+.\merge-schemas.sh
+npx prisma migrate dev --name "init"
 ```
 
 ## Debug Launch.json vscode
